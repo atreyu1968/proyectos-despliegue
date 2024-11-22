@@ -1,0 +1,25 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache python3 make g++ curl
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Build TypeScript
+RUN npm run build
+
+# Create uploads directory
+RUN mkdir -p uploads && chmod 755 uploads
+
+EXPOSE 3000
+
+CMD ["npm", "start"]

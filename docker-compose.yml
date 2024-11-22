@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: fpinnova_app
+    restart: unless-stopped
+    ports:
+      - "3010:80"
+    environment:
+      - VITE_API_URL=/api
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=fpinnova
+      - DB_PASSWORD=fpinnova_secure_pass
+      - DB_NAME=fpinnova
+      - JWT_SECRET=0123456789
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - fpinnova-network
+    volumes:
+      - uploads:/usr/share/nginx/html/uploads
+
+  db:
+    image: mariadb:latest
+    container_name: fpinnova_db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_secure_pass
+      - MYSQL_DATABASE=fpinnova
+      - MYSQL_USER=fpinnova
+      - MYSQL_PASSWORD=fpinnova_secure_pass
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - fpinnova-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "fpinnova", "-pfpinnova_secure_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: 
+      - '--character-set-server=utf8mb4'
+      - '--collation-server=utf8mb4_unicode_ci'
+
+volumes:
+  mariadb_data:
+    name: fpinnova_db_data
+  uploads:
+    name: fpinnova_uploads
+
+networks:
+  fpinnova-network:
+    name: fpinnova_network
+    driver: bridge
